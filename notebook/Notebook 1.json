@@ -13,7 +13,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "eb00c64f-5b71-4740-a578-a46a4f4f2399"
+				"spark.autotune.trackingId": "eeb983cf-fe0f-4004-bc8c-9be3b77fd3f3"
 			}
 		},
 		"metadata": {
@@ -28,19 +28,6 @@
 			},
 			"sessionKeepAliveTimeout": 30
 		},
-		"cells": [
-			{
-				"cell_type": "code",
-				"source": [
-					"%%pyspark\r\n",
-					"df = spark.read.load('abfss://synapsefile@myetlpipeline.dfs.core.windows.net/Log.csv', format='csv'\r\n",
-					"## If header exists uncomment line below\r\n",
-					"##, header=True\r\n",
-					")\r\n",
-					"display(df.limit(10))"
-				],
-				"execution_count": null
-			}
-		]
+		"cells": []
 	}
 }
