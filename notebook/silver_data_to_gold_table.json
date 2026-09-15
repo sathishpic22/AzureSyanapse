@@ -1,5 +1,5 @@
 {
-	"name": "Notebook 1",
+	"name": "silver_data_to_gold_table",
 	"properties": {
 		"nbformat": 4,
 		"nbformat_minor": 2,
@@ -17,7 +17,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "e95bff07-5f4d-4015-a15c-47593bf9c2b5"
+				"spark.autotune.trackingId": "6f084703-9eb5-4052-85ae-3f1fab994894"
 			}
 		},
 		"metadata": {
