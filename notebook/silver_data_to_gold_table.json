@@ -17,7 +17,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "6f084703-9eb5-4052-85ae-3f1fab994894"
+				"spark.autotune.trackingId": "4a23b70f-58e1-473d-b5ed-e003b30033c0"
 			}
 		},
 		"metadata": {
@@ -55,7 +55,7 @@
 				},
 				"source": [
 					"from pyspark.sql.functions import col, avg, round, count\r\n",
-					"df = spark.read.load('abfss://silver@myetlpipeline.dfs.core.windows.net/energy_mix_cleaned/cleaned_silver_delta_table.parquet', format='parquet')\r\n",
+					"df = spark.read.format(\"delta\").load(\"abfss://silver@myetlpipeline.dfs.core.windows.net/energy_mix_cleaned/\")\r\n",
 					"\r\n",
 					"# 3. Create Gold Aggregations (Regional Energy Transition KPI Summary)\r\n",
 					"df_gold_regional = df.groupBy(\"region\", \"year\").agg(\r\n",
