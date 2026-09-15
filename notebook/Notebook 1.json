@@ -17,7 +17,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "1dd731e1-f990-4d3c-8cbc-ca1d78508520"
+				"spark.autotune.trackingId": "05b5557d-7dd5-4b4a-afee-5e2753397202"
 			}
 		},
 		"metadata": {
@@ -40,7 +40,7 @@
 					"authResource": "https://dev.azuresynapse.net"
 				},
 				"sparkVersion": "3.5",
-				"nodeCount": 10,
+				"nodeCount": 3,
 				"cores": 4,
 				"memory": 28,
 				"automaticScaleJobs": false
@@ -50,13 +50,37 @@
 		"cells": [
 			{
 				"cell_type": "code",
+				"metadata": {
+					"collapsed": false
+				},
 				"source": [
+					"# Azure Synapse Spark Notebook (PySpark) - Silver Layer\n",
+					"from pyspark.sql.functions import col, when, round\n",
+					"\n",
+					"# 1. Read Bronze Layer raw files\n",
 					"df = spark.read.format(\"csv\") \\\n",
 					"    .option(\"header\", \"true\") \\\n",
 					"    .option(\"inferSchema\", \"true\") \\\n",
-					"    .load(\"abfss://silver@myetlpipeline.dfs.core.windows.net/energy_mix_yearly_bronze_rawdata.csv\")"
+					"    .load(\"abfss://silver@myetlpipeline.dfs.core.windows.net/energy_mix_yearly_bronze_rawdata.csv\")\n",
+					"\n",
+					"# 2. Deduplicate and enforce schema\n",
+					"df_silver = df.dropDuplicates([\"country\", \"year\"]) \\\n",
+					"    .withColumn(\"year\", col(\"year\").cast(\"integer\")) \\\n",
+					"    .withColumn(\"country\", col(\"country\").cast(\"string\")) \\\n",
+					"    .withColumn(\"iso3\", col(\"iso3\").cast(\"string\")) \\\n",
+					"    .withColumn(\"region\", col(\"region\").cast(\"string\"))\n",
+					"\n",
+					"# 3. Clip percentage values & compute derived metrics\n",
+					"pct_cols = [\"coal_pct\", \"oil_pct\", \"gas_pct\", \"nuclear_pct\", \"hydro_pct\", \"solar_pct\"]\n",
+					"for c in pct_cols:\n",
+					"    df_silver = df_silver.withColumn(c, when(col(c) < 0, 0.0).when(col(c) > 100, 100.0).otherwise(col(c).cast(\"double\")))\n",
+					"\n",
+					"df_silver = df_silver \\\n",
+					"    .withColumn(\"fossil_pct\", round(col(\"coal_pct\") + col(\"oil_pct\") + col(\"gas_pct\"), 2)) \\\n",
+					"    .withColumn(\"clean_pct\", round(col(\"nuclear_pct\") + col(\"hydro_pct\") + col(\"solar_pct\"), 2))\n",
+					""
 				],
-				"execution_count": null
+				"execution_count": 7
 			}
 		]
 	}
