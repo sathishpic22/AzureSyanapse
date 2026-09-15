@@ -1,0 +1,93 @@
+{
+	"name": "Notebook 1",
+	"properties": {
+		"nbformat": 4,
+		"nbformat_minor": 2,
+		"bigDataPool": {
+			"referenceName": "mysprakpool",
+			"type": "BigDataPoolReference"
+		},
+		"sessionProperties": {
+			"driverMemory": "28g",
+			"driverCores": 4,
+			"executorMemory": "28g",
+			"executorCores": 4,
+			"numExecutors": 2,
+			"conf": {
+				"spark.dynamicAllocation.enabled": "false",
+				"spark.dynamicAllocation.minExecutors": "2",
+				"spark.dynamicAllocation.maxExecutors": "2",
+				"spark.autotune.trackingId": "e95bff07-5f4d-4015-a15c-47593bf9c2b5"
+			}
+		},
+		"metadata": {
+			"saveOutput": true,
+			"enableDebugMode": false,
+			"kernelspec": {
+				"name": "synapse_pyspark",
+				"display_name": "Synapse PySpark"
+			},
+			"language_info": {
+				"name": "python"
+			},
+			"a365ComputeOptions": {
+				"id": "/subscriptions/8cdbd8d3-556d-4296-a392-0c5585859716/resourceGroups/myetlpipelines/providers/Microsoft.Synapse/workspaces/sathishsynapseanalysis/bigDataPools/mysprakpool",
+				"name": "mysprakpool",
+				"type": "Spark",
+				"endpoint": "https://sathishsynapseanalysis.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/mysprakpool",
+				"auth": {
+					"type": "AAD",
+					"authResource": "https://dev.azuresynapse.net"
+				},
+				"sparkVersion": "3.5",
+				"nodeCount": 3,
+				"cores": 4,
+				"memory": 28,
+				"automaticScaleJobs": false
+			},
+			"sessionKeepAliveTimeout": 30
+		},
+		"cells": [
+			{
+				"cell_type": "code",
+				"metadata": {
+					"collapsed": false
+				},
+				"source": [
+					"from pyspark.sql.functions import col, avg, round, count\r\n",
+					"df = spark.read.load('abfss://silver@myetlpipeline.dfs.core.windows.net/energy_mix_cleaned/cleaned_silver_delta_table.parquet', format='parquet')\r\n",
+					"\r\n",
+					"# 3. Create Gold Aggregations (Regional Energy Transition KPI Summary)\r\n",
+					"df_gold_regional = df.groupBy(\"region\", \"year\").agg(\r\n",
+					"    round(avg(\"coal_pct\"), 2).alias(\"avg_coal_pct\"),\r\n",
+					"    round(avg(\"oil_pct\"), 2).alias(\"avg_oil_pct\"),\r\n",
+					"    round(avg(\"gas_pct\"), 2).alias(\"avg_gas_pct\"),\r\n",
+					"    round(avg(\"fossil_pct\"), 2).alias(\"avg_fossil_pct\"),\r\n",
+					"    round(avg(\"clean_pct\"), 2).alias(\"avg_clean_pct\"),\r\n",
+					"    round(avg(\"solar_pct\"), 2).alias(\"avg_solar_pct\"),\r\n",
+					"    count(\"country\").alias(\"total_countries\")\r\n",
+					")\r\n",
+					"\r\n",
+					"# 4. Create Gold Aggregations (Country Multi-Year Delta Summary)\r\n",
+					"df_gold_country = df.groupBy(\"country\", \"iso3\", \"region\", \"year\").agg(\r\n",
+					"    round(avg(\"fossil_pct\"), 2).alias(\"fossil_pct\"),\r\n",
+					"    round(avg(\"clean_pct\"), 2).alias(\"clean_pct\"),\r\n",
+					"    round(avg(\"solar_pct\"), 2).alias(\"solar_pct\"),\r\n",
+					"    round(avg(\"hydro_pct\"), 2).alias(\"hydro_pct\"),\r\n",
+					"    round(avg(\"nuclear_pct\"), 2).alias(\"nuclear_pct\")\r\n",
+					")\r\n",
+					"\r\n",
+					"# 5. Write Gold datasets as Delta tables into the Gold ADLS Container\r\n",
+					"gold_regional_path = \"abfss://gold@myetlpipeline.dfs.core.windows.net/energy_mix_gold_regional/\"\r\n",
+					"gold_country_path = \"abfss://gold@myetlpipeline.dfs.core.windows.net/energy_mix_gold_country/\"\r\n",
+					"\r\n",
+					"df_gold_regional.write.format(\"delta\").mode(\"overwrite\").option(\"overwriteSchema\", \"true\").save(gold_regional_path)\r\n",
+					"df_gold_country.write.format(\"delta\").mode(\"overwrite\").option(\"overwriteSchema\", \"true\").save(gold_country_path)\r\n",
+					"\r\n",
+					"print(\"Gold Delta tables created successfully!\")"
+				],
+				"execution_count": 13
+			}
+		]
+	}
+}
