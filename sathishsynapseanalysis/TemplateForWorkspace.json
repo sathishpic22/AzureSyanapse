@@ -1,0 +1,427 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"workspaceName": {
+			"type": "string",
+			"metadata": "Workspace name",
+			"defaultValue": "sathishsynapseanalysis"
+		},
+		"AzureDataLakeStorage1_accountKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accountKey' of 'AzureDataLakeStorage1'"
+		},
+		"sathishsynapseanalysis-WorkspaceDefaultSqlServer_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'sathishsynapseanalysis-WorkspaceDefaultSqlServer'",
+			"defaultValue": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=tcp:sathishsynapseanalysis.sql.azuresynapse.net,1433;Initial Catalog=@{linkedService().DBName}"
+		},
+		"AzureDataLakeStorage1_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://myetlpipeline.dfs.core.windows.net/"
+		},
+		"sathishsynapseanalysis-WorkspaceDefaultStorage_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://myetlpipeline.dfs.core.windows.net"
+		}
+	},
+	"variables": {
+		"workspaceId": "[concat('Microsoft.Synapse/workspaces/', parameters('workspaceName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('workspaceName'), '/AzureDataLakeStorage1')]",
+			"type": "Microsoft.Synapse/workspaces/linkedServices",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobFS",
+				"typeProperties": {
+					"url": "[parameters('AzureDataLakeStorage1_properties_typeProperties_url')]",
+					"accountKey": {
+						"type": "SecureString",
+						"value": "[parameters('AzureDataLakeStorage1_accountKey')]"
+					}
+				},
+				"connectVia": {
+					"referenceName": "AutoResolveIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/sathishsynapseanalysis-WorkspaceDefaultSqlServer')]",
+			"type": "Microsoft.Synapse/workspaces/linkedServices",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"parameters": {
+					"DBName": {
+						"type": "String"
+					}
+				},
+				"annotations": [],
+				"type": "AzureSqlDW",
+				"typeProperties": {
+					"connectionString": "[parameters('sathishsynapseanalysis-WorkspaceDefaultSqlServer_connectionString')]"
+				},
+				"connectVia": {
+					"referenceName": "AutoResolveIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/sathishsynapseanalysis-WorkspaceDefaultStorage')]",
+			"type": "Microsoft.Synapse/workspaces/linkedServices",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobFS",
+				"typeProperties": {
+					"url": "[parameters('sathishsynapseanalysis-WorkspaceDefaultStorage_properties_typeProperties_url')]"
+				},
+				"connectVia": {
+					"referenceName": "AutoResolveIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/AutoResolveIntegrationRuntime')]",
+			"type": "Microsoft.Synapse/workspaces/integrationRuntimes",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"type": "Managed",
+				"typeProperties": {
+					"computeProperties": {
+						"location": "AutoResolve",
+						"dataFlowProperties": {
+							"computeType": "General",
+							"coreCount": 8,
+							"timeToLive": 0
+						}
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/WorkspaceSystemIdentity')]",
+			"type": "Microsoft.Synapse/workspaces/credentials",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"type": "ManagedIdentity",
+				"typeProperties": {}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/brones_to_silverdata')]",
+			"type": "Microsoft.Synapse/workspaces/notebooks",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"nbformat": 4,
+				"nbformat_minor": 2,
+				"bigDataPool": {
+					"referenceName": "mysprakpool",
+					"type": "BigDataPoolReference"
+				},
+				"sessionProperties": {
+					"driverMemory": "28g",
+					"driverCores": 4,
+					"executorMemory": "28g",
+					"executorCores": 4,
+					"numExecutors": 2,
+					"conf": {
+						"spark.dynamicAllocation.enabled": "false",
+						"spark.dynamicAllocation.minExecutors": "2",
+						"spark.dynamicAllocation.maxExecutors": "2",
+						"spark.autotune.trackingId": "b378e996-3b59-41e8-946b-d43c142ca8e2"
+					}
+				},
+				"metadata": {
+					"saveOutput": true,
+					"enableDebugMode": false,
+					"kernelspec": {
+						"name": "synapse_pyspark",
+						"display_name": "Synapse PySpark"
+					},
+					"language_info": {
+						"name": "python"
+					},
+					"a365ComputeOptions": {
+						"id": "/subscriptions/8cdbd8d3-556d-4296-a392-0c5585859716/resourceGroups/myetlpipelines/providers/Microsoft.Synapse/workspaces/sathishsynapseanalysis/bigDataPools/mysprakpool",
+						"name": "mysprakpool",
+						"type": "Spark",
+						"endpoint": "https://sathishsynapseanalysis.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/mysprakpool",
+						"auth": {
+							"type": "AAD",
+							"authResource": "https://dev.azuresynapse.net"
+						},
+						"sparkVersion": "3.5",
+						"nodeCount": 3,
+						"cores": 4,
+						"memory": 28
+					},
+					"sessionKeepAliveTimeout": 30
+				},
+				"cells": [
+					{
+						"cell_type": "code",
+						"metadata": {
+							"collapsed": false
+						},
+						"source": [
+							"# Azure Synapse Spark Notebook (PySpark) - Silver Layer\n",
+							"from pyspark.sql.functions import col, when, round\n",
+							"\n",
+							"# 1. Read Bronze Layer raw files\n",
+							"df = spark.read.format(\"csv\") \\\n",
+							"    .option(\"header\", \"true\") \\\n",
+							"    .option(\"inferSchema\", \"true\") \\\n",
+							"    .load(\"abfss://silver@myetlpipeline.dfs.core.windows.net/energy_mix_yearly_bronze_rawdata.csv\")\n",
+							"\n",
+							"# 2. Deduplicate and enforce schema\n",
+							"df_silver = df.dropDuplicates([\"country\", \"year\"]) \\\n",
+							"    .withColumn(\"year\", col(\"year\").cast(\"integer\")) \\\n",
+							"    .withColumn(\"country\", col(\"country\").cast(\"string\")) \\\n",
+							"    .withColumn(\"iso3\", col(\"iso3\").cast(\"string\")) \\\n",
+							"    .withColumn(\"region\", col(\"region\").cast(\"string\"))\n",
+							"\n",
+							"# 3. Clip percentage values & compute derived metrics\n",
+							"pct_cols = [\"coal_pct\", \"oil_pct\", \"gas_pct\", \"nuclear_pct\", \"hydro_pct\", \"solar_pct\"]\n",
+							"for c in pct_cols:\n",
+							"    df_silver = df_silver.withColumn(c, when(col(c) < 0, 0.0).when(col(c) > 100, 100.0).otherwise(col(c).cast(\"double\")))\n",
+							"\n",
+							"df_silver = df_silver \\\n",
+							"    .withColumn(\"fossil_pct\", round(col(\"coal_pct\") + col(\"oil_pct\") + col(\"gas_pct\"), 2)) \\\n",
+							"    .withColumn(\"clean_pct\", round(col(\"nuclear_pct\") + col(\"hydro_pct\") + col(\"solar_pct\"), 2))\n",
+							"\n",
+							"# 4. Write to Silver Delta Lake Table\n",
+							"df_silver.write.format(\"delta\").mode(\"overwrite\").option(\"overwriteSchema\", \"true\") \\\n",
+							"    .save(\"abfss://silver@myetlpipeline.dfs.core.windows.net/energy_mix_cleaned/\")"
+						],
+						"outputs": [],
+						"execution_count": 9
+					}
+				]
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/mysprakpool')]",
+			"type": "Microsoft.Synapse/workspaces/bigDataPools",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"autoPause": {
+					"enabled": true,
+					"delayInMinutes": 10
+				},
+				"autoScale": {
+					"enabled": true,
+					"maxNodeCount": 3,
+					"minNodeCount": 3
+				},
+				"nodeCount": 3,
+				"nodeSize": "Small",
+				"nodeSizeFamily": "MemoryOptimized",
+				"sparkVersion": "3.5",
+				"isComputeIsolationEnabled": false,
+				"sessionLevelPackagesEnabled": false,
+				"annotations": []
+			},
+			"dependsOn": [],
+			"location": "centralus"
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/silver_data_to_gold_table')]",
+			"type": "Microsoft.Synapse/workspaces/notebooks",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"nbformat": 4,
+				"nbformat_minor": 2,
+				"bigDataPool": {
+					"referenceName": "mysprakpool",
+					"type": "BigDataPoolReference"
+				},
+				"sessionProperties": {
+					"driverMemory": "28g",
+					"driverCores": 4,
+					"executorMemory": "28g",
+					"executorCores": 4,
+					"numExecutors": 2,
+					"conf": {
+						"spark.dynamicAllocation.enabled": "false",
+						"spark.dynamicAllocation.minExecutors": "2",
+						"spark.dynamicAllocation.maxExecutors": "2",
+						"spark.autotune.trackingId": "45c16afc-83ea-4e4d-9fff-23cda3104a4e"
+					}
+				},
+				"metadata": {
+					"saveOutput": true,
+					"enableDebugMode": false,
+					"kernelspec": {
+						"name": "synapse_pyspark",
+						"display_name": "Synapse PySpark"
+					},
+					"language_info": {
+						"name": "python"
+					},
+					"a365ComputeOptions": {
+						"id": "/subscriptions/8cdbd8d3-556d-4296-a392-0c5585859716/resourceGroups/myetlpipelines/providers/Microsoft.Synapse/workspaces/sathishsynapseanalysis/bigDataPools/mysprakpool",
+						"name": "mysprakpool",
+						"type": "Spark",
+						"endpoint": "https://sathishsynapseanalysis.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/mysprakpool",
+						"auth": {
+							"type": "AAD",
+							"authResource": "https://dev.azuresynapse.net"
+						},
+						"sparkVersion": "3.5",
+						"nodeCount": 3,
+						"cores": 4,
+						"memory": 28,
+						"automaticScaleJobs": false
+					},
+					"sessionKeepAliveTimeout": 30
+				},
+				"cells": [
+					{
+						"cell_type": "code",
+						"metadata": {
+							"microsoft": {},
+							"collapsed": false
+						},
+						"source": [
+							"from pyspark.sql.functions import col, avg, round, count\r\n",
+							"df = spark.read.load('abfss://silver@myetlpipeline.dfs.core.windows.net/energy_mix_cleaned/cleaned_silver_delta_table.parquet', format='parquet')\r\n",
+							"\r\n",
+							"# 3. Create Gold Aggregations (Regional Energy Transition KPI Summary)\r\n",
+							"df_gold_regional = df.groupBy(\"region\", \"year\").agg(\r\n",
+							"    round(avg(\"coal_pct\"), 2).alias(\"avg_coal_pct\"),\r\n",
+							"    round(avg(\"oil_pct\"), 2).alias(\"avg_oil_pct\"),\r\n",
+							"    round(avg(\"gas_pct\"), 2).alias(\"avg_gas_pct\"),\r\n",
+							"    round(avg(\"fossil_pct\"), 2).alias(\"avg_fossil_pct\"),\r\n",
+							"    round(avg(\"clean_pct\"), 2).alias(\"avg_clean_pct\"),\r\n",
+							"    round(avg(\"solar_pct\"), 2).alias(\"avg_solar_pct\"),\r\n",
+							"    count(\"country\").alias(\"total_countries\")\r\n",
+							")\r\n",
+							"\r\n",
+							"# 4. Create Gold Aggregations (Country Multi-Year Delta Summary)\r\n",
+							"df_gold_country = df.groupBy(\"country\", \"iso3\", \"region\", \"year\").agg(\r\n",
+							"    round(avg(\"fossil_pct\"), 2).alias(\"fossil_pct\"),\r\n",
+							"    round(avg(\"clean_pct\"), 2).alias(\"clean_pct\"),\r\n",
+							"    round(avg(\"solar_pct\"), 2).alias(\"solar_pct\"),\r\n",
+							"    round(avg(\"hydro_pct\"), 2).alias(\"hydro_pct\"),\r\n",
+							"    round(avg(\"nuclear_pct\"), 2).alias(\"nuclear_pct\")\r\n",
+							")\r\n",
+							"\r\n",
+							"# 5. Write Gold datasets as Delta tables into the Gold ADLS Container\r\n",
+							"gold_regional_path = \"abfss://gold@myetlpipeline.dfs.core.windows.net/energy_mix_gold_regional/\"\r\n",
+							"gold_country_path = \"abfss://gold@myetlpipeline.dfs.core.windows.net/energy_mix_gold_country/\"\r\n",
+							"\r\n",
+							"df_gold_regional.write.format(\"delta\").mode(\"overwrite\").option(\"overwriteSchema\", \"true\").save(gold_regional_path)\r\n",
+							"df_gold_country.write.format(\"delta\").mode(\"overwrite\").option(\"overwriteSchema\", \"true\").save(gold_country_path)\r\n",
+							"\r\n",
+							"print(\"Gold Delta tables created successfully!\")"
+						],
+						"outputs": [],
+						"execution_count": 13
+					}
+				]
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/end_to_end_silver_to_gold_pipeline')]",
+			"type": "Microsoft.Synapse/workspaces/pipelines",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"activities": [
+					{
+						"name": "bronze_to_silver_data",
+						"type": "SynapseNotebook",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebook": {
+								"referenceName": "brones_to_silverdata",
+								"type": "NotebookReference"
+							},
+							"snapshot": true,
+							"sparkPool": {
+								"referenceName": "mysprakpool",
+								"type": "BigDataPoolReference"
+							},
+							"executorSize": "Small",
+							"conf": {
+								"spark.dynamicAllocation.enabled": true
+							},
+							"driverSize": "Small"
+						}
+					},
+					{
+						"name": "silver_to_gold_tables",
+						"type": "SynapseNotebook",
+						"dependsOn": [
+							{
+								"activity": "bronze_to_silver_data",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebook": {
+								"referenceName": "silver_data_to_gold_table",
+								"type": "NotebookReference"
+							},
+							"snapshot": true,
+							"sparkPool": {
+								"referenceName": "mysprakpool",
+								"type": "BigDataPoolReference"
+							},
+							"executorSize": "Small",
+							"conf": {
+								"spark.dynamicAllocation.enabled": true
+							},
+							"driverSize": "Small"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/notebooks/brones_to_silverdata')]",
+				"[concat(variables('workspaceId'), '/bigDataPools/mysprakpool')]",
+				"[concat(variables('workspaceId'), '/notebooks/silver_data_to_gold_table')]"
+			]
+		}
+	]
+}
