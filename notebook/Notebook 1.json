@@ -3,6 +3,10 @@
 	"properties": {
 		"nbformat": 4,
 		"nbformat_minor": 2,
+		"bigDataPool": {
+			"referenceName": "mysprakpool",
+			"type": "BigDataPoolReference"
+		},
 		"sessionProperties": {
 			"driverMemory": "28g",
 			"driverCores": 4,
@@ -13,7 +17,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "eeb983cf-fe0f-4004-bc8c-9be3b77fd3f3"
+				"spark.autotune.trackingId": "1dd731e1-f990-4d3c-8cbc-ca1d78508520"
 			}
 		},
 		"metadata": {
@@ -21,13 +25,39 @@
 			"enableDebugMode": false,
 			"kernelspec": {
 				"name": "synapse_pyspark",
-				"display_name": "python"
+				"display_name": "Synapse PySpark"
 			},
 			"language_info": {
 				"name": "python"
 			},
+			"a365ComputeOptions": {
+				"id": "/subscriptions/8cdbd8d3-556d-4296-a392-0c5585859716/resourceGroups/myetlpipelines/providers/Microsoft.Synapse/workspaces/sathishsynapseanalysis/bigDataPools/mysprakpool",
+				"name": "mysprakpool",
+				"type": "Spark",
+				"endpoint": "https://sathishsynapseanalysis.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/mysprakpool",
+				"auth": {
+					"type": "AAD",
+					"authResource": "https://dev.azuresynapse.net"
+				},
+				"sparkVersion": "3.5",
+				"nodeCount": 10,
+				"cores": 4,
+				"memory": 28,
+				"automaticScaleJobs": false
+			},
 			"sessionKeepAliveTimeout": 30
 		},
-		"cells": []
+		"cells": [
+			{
+				"cell_type": "code",
+				"source": [
+					"df = spark.read.format(\"csv\") \\\n",
+					"    .option(\"header\", \"true\") \\\n",
+					"    .option(\"inferSchema\", \"true\") \\\n",
+					"    .load(\"abfss://silver@myetlpipeline.dfs.core.windows.net/energy_mix_yearly_bronze_rawdata.csv\")"
+				],
+				"execution_count": null
+			}
+		]
 	}
 }
